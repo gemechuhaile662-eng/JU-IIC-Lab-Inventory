@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Scan QR — Lab Inventory</title>
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/camera.css">
+  <style>
+    #qrReader {
+      width: 100% !important;
+      height: 100% !important;
+      border: none !important;
+    }
+    #qrReader video {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+    }
+    .qr-error {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+      background: rgba(220, 38, 38, .9);
+      color: #fff;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      display: none;
+    }
+    .qr-error.show { display: block; }
+  </style>
+</head>
+<body class="camera-body">
+
+  <header class="camera-header">
+    <button class="icon-btn" onclick="location.href='index.html'">←</button>
+    <span>Scan QR Code</span>
+    <button class="icon-btn" onclick="toggleTorch()">⚡</button>
+  </header>
+
+  <div class="camera-viewport">
+    <div id="qrReader"></div>
+
+    <div class="guide-frame">
+      <div class="corner tl"></div>
+      <div class="corner tr"></div>
+      <div class="corner bl"></div>
+      <div class="corner br"></div>
+    </div>
+
+    <p class="hint">Point camera at a QR code</p>
+    <div id="qrError" class="qr-error"></div>
+  </div>
+
+  <div class="camera-controls">
+    <button class="upload-btn" onclick="location.href='manual.html'" title="Search manually">🔍</button>
+    <div style="width:72px"></div>
+    <button class="flash-btn" onclick="location.href='camera.html'" title="Scan by photo">📷</button>
+  </div>
+
+  <!-- html5-qrcode library -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="js/api.js"></script>
+
+  <script>
+    let scanner = null;
+    let torchOn = false;
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      // Auth check
+      try {
+        const me = await api.get('/api/auth/me');
+        sessionStorage.setItem('user', JSON.stringify(me));
+      } catch (err) {
+        if (err.status === 401) {
+          location.href = 'login.html';
+          return;
+        }
+      }
+
+      startScanner();
+    });
+
+    function startScanner() {
+      scanner = new Html5Qrcode('qrReader');
+
+      const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0,
+      };
+
+      scanner.start(
+        { facingMode: 'environment' },
+        config,
+        onScanSuccess,
+        onScanFailure
+      ).catch((err) => {
+        showError('Camera error: ' + err.message);
+      });
+    }
+
+    async function onScanSuccess(decodedText) {
+      // Stop scanner before navigating
+      try { await scanner.stop(); } catch (e) {}
+
+      // decodedText is like "equipment:1" or "QR-EQ-0001"
+      try {
+        const item = await api.get('/api/items/lookup/qr/' + encodeURIComponent(decodedText));
+        // Navigate to result page with the item type + id
+        location.href = `result.html?type=${item.item_type}&id=${item.item_id}`;
+      } catch (err) {
+        showError('QR not found: ' + decodedText);
+        // Resume scanning after 2 seconds
+        setTimeout(() => {
+          hideError();
+          startScanner();
+        }, 2500);
+      }
+    }
+
+    function onScanFailure(err) {
+      // Ignore — this fires constantly while scanning
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('qrError');
+      el.textContent = msg;
+      el.classList.add('show');
+    }
+    function hideError() {
+      document.getElementById('qrError').classList.remove('show');
+    }
+
+    function toggleTorch() {
+      if (!scanner) return;
+      // Torch support varies — skip for now, just visual feedback
+      torchOn = !torchOn;
+    }
+
+    window.addEventListener('beforeunload', async () => {
+      try { await scanner?.stop(); } catch (e) {}
+    });
+  </script>
+</body>
+</html>

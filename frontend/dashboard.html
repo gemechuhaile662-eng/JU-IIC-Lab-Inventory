@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Dashboard — Lab Inventory</title>
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/base.css">
+  <style>
+    .quick-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    @media (min-width: 640px) {
+      .quick-actions { grid-template-columns: repeat(3, 1fr); }
+    }
+    .quick-btn {
+      display: flex; align-items: center; gap: 12px; padding: 16px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); cursor: pointer; text-align: left;
+      transition: border-color .15s, box-shadow .15s, transform .1s;
+      box-shadow: var(--shadow-sm);
+    }
+    .quick-btn:hover { border-color: var(--primary); box-shadow: var(--shadow); }
+    .quick-btn:active { transform: scale(.98); }
+    .quick-btn.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .quick-btn.primary:hover { background: var(--primary-dark); }
+    .quick-btn .qb-icon {
+      font-size: 24px; width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--surface-2); border-radius: 10px; flex-shrink: 0;
+    }
+    .quick-btn.primary .qb-icon { background: rgba(255,255,255,.18); }
+    .quick-btn .qb-text { flex: 1; min-width: 0; }
+    .quick-btn .qb-title { font-size: 14px; font-weight: 700; }
+    .quick-btn .qb-sub { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .quick-btn.primary .qb-sub { color: rgba(255,255,255,.85); }
+
+    .item-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+      cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .1s;
+      box-shadow: var(--shadow-sm);
+    }
+    .item-card:hover { border-color: var(--primary); box-shadow: var(--shadow); }
+    .item-card:active { transform: scale(.99); }
+    .item-card .item-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+    .item-card .item-icon {
+      width: 44px; height: 44px; border-radius: 10px;
+      background: var(--primary-light); color: var(--primary-dark);
+      display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;
+    }
+    .item-card.component .item-icon { background: #d1fae5; color: #047857; }
+    .item-card .item-titles { flex: 1; min-width: 0; }
+    .item-card .item-name { font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.3; }
+    .item-card .item-meta { font-size: 12px; color: var(--muted); margin-top: 3px; display: flex; flex-wrap: wrap; gap: 6px; }
+    .item-card .item-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+    .item-card .item-desc { font-size: 13px; color: var(--muted); line-height: 1.5; padding-top: 8px; border-top: 1px solid var(--border); margin-top: 4px; }
+
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin: 28px 0 12px; gap: 12px; }
+    .section-header h2 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+    .section-header .count-badge { font-size: 11px; font-weight: 700; background: var(--surface-2); color: var(--text); padding: 3px 8px; border-radius: 999px; text-transform: none; letter-spacing: 0; }
+
+    .skeleton { height: 110px; background: linear-gradient(90deg, var(--surface-2) 25%, #e9eef5 50%, var(--surface-2) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: var(--radius); margin-bottom: 10px; }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <img src="assets/logo.svg" alt="Lab" class="logo">
+    <h1>Lab Inventory</h1>
+    <div class="user-chip" id="userChip" onclick="logout()" title="Sign out">
+      <span class="avatar">?</span>
+      <span class="user-name">…</span>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- QUICK ACTIONS (Role protected) -->
+    <div class="quick-actions">
+      <button class="quick-btn primary" onclick="location.href='camera.html'">
+        <div class="qb-icon">📷</div>
+        <div class="qb-text">
+          <div class="qb-title">Scan with Camera</div>
+          <div class="qb-sub">Identify any item</div>
+        </div>
+      </button>
+      
+      <button class="quick-btn" onclick="location.href='qr.html'">
+        <div class="qb-icon">🔳</div>
+        <div class="qb-text">
+          <div class="qb-title">Scan QR Code</div>
+          <div class="qb-sub">Scan label</div>
+        </div>
+      </button>
+      
+      <button class="quick-btn" onclick="location.href='manual.html'">
+        <div class="qb-icon">🔍</div>
+        <div class="qb-text">
+          <div class="qb-title">Search</div>
+          <div class="qb-sub">Browse all items</div>
+        </div>
+      </button>
+
+      <!-- HIDDEN FOR VIEWERS -->
+      <button class="quick-btn" id="btnStock" onclick="location.href='stock.html'" style="display:none;">
+        <div class="qb-icon">📦</div>
+        <div class="qb-text">
+          <div class="qb-title">Stock Mgmt</div>
+          <div class="qb-sub">In / Out</div>
+        </div>
+      </button>
+
+      <!-- HIDDEN FOR VIEWERS -->
+      <button class="quick-btn" id="btnReports" onclick="location.href='reports.html'" style="display:none;">
+        <div class="qb-icon">📈</div>
+        <div class="qb-text">
+          <div class="qb-title">Reports</div>
+          <div class="qb-sub">Export Excel / PDF</div>
+        </div>
+      </button>
+
+      <button class="quick-btn" onclick="location.href='my-borrowings.html'">
+        <div class="qb-icon">⏳</div>
+        <div class="qb-text">
+          <div class="qb-title">My Borrowings</div>
+          <div class="qb-sub">View borrowed items</div>
+        </div>
+      </button>
+
+      <!-- HIDDEN FOR NON-ADMINS -->
+      <button class="quick-btn" id="btnAdmin" onclick="location.href='admin.html'" style="display:none; border-color: #f59e0b;">
+        <div class="qb-icon" style="background: #fef3c7;">👑</div>
+        <div class="qb-text">
+          <div class="qb-title">Admin Panel</div>
+          <div class="qb-sub">Manage users</div>
+        </div>
+      </button>
+    </div>
+
+    <!-- EQUIPMENT SECTION -->
+    <div id="equipmentSection">
+      <div class="section-header">
+        <h2>Equipment <span class="count-badge" id="eqCount">…</span></h2>
+      </div>
+      <div id="equipmentList">
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+      </div>
+    </div>
+
+    <!-- COMPONENTS SECTION -->
+    <div id="componentsSection">
+      <div class="section-header">
+        <h2>Components <span class="count-badge" id="cpCount">…</span></h2>
+      </div>
+      <div id="componentsList">
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <nav class="bottom-nav">
+    <a href="dashboard.html" class="nav-item active">
+      <span class="nav-icon">🏠</span> Home
+    </a>
+    <a href="camera.html" class="nav-item">
+      <span class="nav-icon">📷</span> Scan
+    </a>
+    <a href="qr.html" class="nav-item">
+      <span class="nav-icon">🔳</span> QR
+    </a>
+    <a href="manual.html" class="nav-item">
+      <span class="nav-icon">🔍</span> Search
+    </a>
+  </nav>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    let ALL_ITEMS = [];
+
+    (async () => {
+      try {
+        const me = await requireAuth();
+        renderUserChip();
+
+        // =======================================================
+        // ROLE-BASED ACCESS CONTROL (Show/Hide Buttons)
+        // =======================================================
+        if (me.role === 'Admin') {
+          document.getElementById('btnAdmin').style.display = 'flex';
+          document.getElementById('btnStock').style.display = 'flex';
+          document.getElementById('btnReports').style.display = 'flex';
+        } 
+        else if (me.role === 'Storekeeper' || me.role === 'Technician') {
+          document.getElementById('btnStock').style.display = 'flex';
+          document.getElementById('btnReports').style.display = 'flex';
+        }
+        // Viewers get none of the above
+
+        // Load items
+        const rawItems = await api.get('/api/items');
+        const detailed = await Promise.all(
+          rawItems.map(async (it) => {
+            try {
+              const d = await api.get(`/api/items/${it.item_type}/${it.id}`);
+              return { ...it, ...d };
+            } catch (e) {
+              return { ...it, error: true };
+            }
+          })
+        );
+        ALL_ITEMS = detailed.filter(i => !i.error);
+        renderAll();
+
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+
+    function renderAll() {
+      const eqItems = ALL_ITEMS.filter(i => i.item_type === 'equipment');
+      const cpItems = ALL_ITEMS.filter(i => i.item_type === 'component');
+
+      document.getElementById('eqCount').textContent = eqItems.length;
+      document.getElementById('cpCount').textContent = cpItems.length;
+
+      renderSection('equipmentList', eqItems, 'equipment');
+      renderSection('componentsList', cpItems, 'component');
+    }
+
+    function renderSection(listId, items, type) {
+      const list = document.getElementById(listId);
+      if (!items.length) {
+        list.innerHTML = `<div class="empty-state">No ${type} items.</div>`;
+        return;
+      }
+      list.innerHTML = items.map(i => renderItemCard(i, type)).join('');
+    }
+
+    function renderItemCard(item, type) {
+      const isEq = type === 'equipment';
+      const statusBadge = isEq && item.status ? `<span class="badge ${statusClass(item.status)}">${humanize(item.status)}</span>` : '';
+      const lowStockBadge = !isEq && item.low_stock ? `<span class="badge danger">Low stock</span>` : '';
+
+      const metaParts = [];
+      if (item.lab_name) metaParts.push(item.lab_name);
+      if (isEq && item.asset_tag) metaParts.push(item.asset_tag);
+      if (!isEq && item.quantity != null) metaParts.push(`${item.quantity} ${item.unit || 'pcs'}`);
+
+      const desc = buildDescription(item, type);
+
+      return `
+        <div class="item-card ${type}" onclick="location.href='result.html?type=${type}&id=${item.item_id}'">
+          <div class="item-head">
+            <div class="item-icon">${isEq ? '📦' : '🔧'}</div>
+            <div class="item-titles">
+              <div class="item-name">${item.display_name || item.name || 'Unknown'}</div>
+              <div class="item-meta">${metaParts.map(p => `<span>${p}</span>`).join('')}</div>
+            </div>
+          </div>
+          <div class="item-badges">
+            ${statusBadge}
+            ${lowStockBadge}
+          </div>
+          ${desc ? `<div class="item-desc">${desc}</div>` : ''}
+        </div>
+      `;
+    }
+
+    function buildDescription(item, type) {
+      const parts = [];
+      if (type === 'equipment') {
+        if (item.serial_no) parts.push(`Serial ${item.serial_no}`);
+        if (item.status === 'available') parts.push('Ready for use');
+        else if (item.status === 'borrowed') parts.push('Currently on loan');
+        else if (item.status === 'damaged') parts.push('Reported damaged');
+      } else {
+        if (item.category) parts.push(`${item.category} component`);
+        if (item.low_stock && item.quantity != null) parts.push(`Only ${item.quantity} left`);
+      }
+      return parts.join(' · ');
+    }
+
+    function statusClass(status) {
+      if (status === 'available') return 'success';
+      if (status === 'borrowed') return 'info';
+      if (status === 'damaged') return 'danger';
+      if (status === 'under_maintenance') return 'warn';
+      return 'info';
+    }
+    const humanize = (s) => s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  </script>
+</body>
+</html>

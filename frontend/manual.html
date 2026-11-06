@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Manual Pick — Lab Inventory</title>
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/result.css">
+</head>
+<body class="result-body">
+
+  <header class="camera-header">
+    <button class="icon-btn" onclick="history.back()">←</button>
+    <span>Choose Item</span>
+    <span></span>
+  </header>
+
+  <main>
+    <div class="search-bar">
+      <input
+        id="search"
+        type="text"
+        placeholder="Search by name, asset tag, or QR code…"
+        autofocus
+      >
+    </div>
+    <ul id="itemList" class="item-list">
+      <li class="empty">Loading…</li>
+    </ul>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script src="js/manual.js"></script>
+</body>
+</html>

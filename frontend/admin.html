@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Admin Panel — Lab Inventory</title>
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/base.css">
+  <style>
+    .user-table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
+    .user-table th, .user-table td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .user-table th { background: var(--surface-2); font-weight: 600; color: var(--muted); text-transform: uppercase; font-size: 11px; letter-spacing: .5px; }
+    .user-table tr:last-child td { border-bottom: none; }
+    .role-select { padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); font-size: 13px; font-weight: 600; cursor: pointer; }
+    .role-select:focus { outline: none; border-color: var(--primary); }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <button class="icon-btn" onclick="location.href='dashboard.html'">←</button>
+    <h1>Admin Panel</h1>
+    <div class="user-chip" id="userChip" onclick="logout()" title="Sign out">
+      <span class="avatar">?</span>
+      <span class="user-name">…</span>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="section-header" style="margin-top: 0;">
+      <h2>User Management</h2>
+    </div>
+    <p style="color: var(--muted); font-size: 14px; margin-bottom: 20px;">
+      As an Admin, you can view all registered users and change their system roles.
+    </p>
+
+    <div style="overflow-x: auto;">
+      <table class="user-table" id="userTable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="userList">
+          <tr><td colspan="5" style="text-align:center; padding: 30px;">Loading users…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    let CURRENT_USER = null;
+
+    (async () => {
+      try {
+        CURRENT_USER = await requireAuth();
+      } catch (e) { return; }
+
+      if (CURRENT_USER.role !== 'Admin') {
+        alert('Access Denied. You must be an Admin to view this page.');
+        location.href = 'dashboard.html';
+        return;
+      }
+
+      renderUserChip();
+      loadUsers();
+    })();
+
+    async function loadUsers() {
+      try {
+        const users = await api.get('/api/auth/users');
+        const list = document.getElementById('userList');
+
+        list.innerHTML = users.map(u => {
+          const isSelf = u.user_id === CURRENT_USER.user_id;
+          
+          const roleOptions = ['Admin', 'Technician', 'Storekeeper', 'Viewer']
+            .map(r => `<option value="${r}" ${u.role === r ? 'selected' : ''}>${r}</option>`)
+            .join('');
+
+          // We use "onchange" to trigger the update immediately
+          const roleSelect = isSelf 
+            ? `<span style="font-weight:600; color:var(--primary);">${u.role} (You)</span>`
+            : `<select class="role-select" onchange="changeRole(${u.user_id}, this.value, this)">${roleOptions}</select>`;
+
+          const statusBadge = u.status === 'active' 
+            ? '<span class="badge success">Active</span>' 
+            : '<span class="badge danger">Inactive</span>';
+
+          return `
+            <tr>
+              <td>
+                <div style="font-weight:600;">${u.full_name}</div>
+                <div style="font-size:12px; color:var(--muted);">${u.phone || 'No phone'}</div>
+              </td>
+              <td>${u.email}</td>
+              <td>${roleSelect}</td>
+              <td>${statusBadge}</td>
+              <td>
+                ${!isSelf ? `<button onclick="resetPassword(${u.user_id}, '${u.full_name}')" style="background:none; border:none; color:var(--primary); font-weight:600; cursor:pointer;">🔑 Reset Pass</button>` : '-'}
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+      } catch (err) {
+        document.getElementById('userList').innerHTML = `
+          <tr><td colspan="5" style="text-align:center; color:var(--danger); padding: 30px;">
+            Failed to load users: ${err.message}
+          </td></tr>`;
+      }
+    }
+
+    async function changeRole(userId, newRole, selectElement) {
+      if (!confirm(`Are you sure you want to change this user's role to ${newRole}?`)) {
+        loadUsers(); // Revert the dropdown visually if they click Cancel
+        return;
+      }
+
+      selectElement.disabled = true; // Lock dropdown while saving
+
+      try {
+        // Send PUT request to backend
+        await api.put(`/api/auth/users/${userId}/role`, { role: newRole });
+        alert(`✅ Role updated to ${newRole} successfully!`);
+        loadUsers(); // Refresh table
+      } catch (err) {
+        alert('❌ Failed to update role: ' + err.message);
+        loadUsers(); // Revert on error
+      }
+    }
+
+    async function resetPassword(userId, userName) {
+      const newPassword = prompt(`Enter a new password for ${userName}:`);
+      if (!newPassword) return;
+      if (newPassword.length < 6) {
+        alert('❌ Password must be at least 6 characters long.');
+        return;
+      }
+
+      try {
+        await api.put(`/api/auth/users/${userId}/reset-password`, { password: newPassword });
+        alert(`✅ Password for ${userName} has been reset successfully!`);
+      } catch (err) {
+        alert('❌ Failed to reset password: ' + err.message);
+      }
+    }
+  </script>
+</body>
+</html>

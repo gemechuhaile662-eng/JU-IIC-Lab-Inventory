@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Scan Item — Lab Inventory</title>
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/camera.css">
+</head>
+<body class="camera-body">
+
+  <header class="camera-header">
+    <button class="icon-btn" onclick="location.href='index.html'">←</button>
+    <span>Scan Item</span>
+    <button class="icon-btn" onclick="toggleFlash()">⚡</button>
+  </header>
+
+  <div class="camera-viewport">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="canvas" style="display:none"></canvas>
+
+    <div class="guide-frame">
+      <div class="corner tl"></div>
+      <div class="corner tr"></div>
+      <div class="corner bl"></div>
+      <div class="corner br"></div>
+    </div>
+
+    <p class="hint">Center the item in the frame</p>
+  </div>
+
+  <div class="camera-controls">
+    <label class="upload-btn" for="fileInput" title="Upload from gallery">🖼️</label>
+    <input id="fileInput" type="file" accept="image/*" capture="environment" hidden>
+    <button id="captureBtn" class="capture-btn" aria-label="Capture"></button>
+    <button class="flash-btn" onclick="location.href='manual.html'" title="Manual search">🔍</button>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/camera.js"></script>
+  <script>
+    (async () => { try { await requireAuth(); } catch (e) {} })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>My Borrowings — Lab Inventory</title>
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/base.css">
+  <style>
+    .borrow-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+    .borrow-card.overdue {
+      border-left: 4px solid var(--danger);
+    }
+    .borrow-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .borrow-title {
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .borrow-tag {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .borrow-dates {
+      display: flex;
+      gap: 16px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      background: var(--surface-2);
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+    }
+    .borrow-dates div span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .borrow-dates div strong {
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <button class="icon-btn" onclick="location.href='dashboard.html'">←</button>
+    <h1>My Borrowings</h1>
+    <span style="width:34px"></span>
+  </header>
+
+  <main class="main">
+    <div id="borrowList">
+      <div class="skeleton" style="height: 140px; margin-bottom: 12px;"></div>
+      <div class="skeleton" style="height: 140px; margin-bottom: 12px;"></div>
+    </div>
+  </main>
+
+  <nav class="bottom-nav">
+    <a href="dashboard.html" class="nav-item">
+      <span class="nav-icon">🏠</span> Home
+    </a>
+    <a href="camera.html" class="nav-item">
+      <span class="nav-icon">📷</span> Scan
+    </a>
+    <a href="my-borrowings.html" class="nav-item active">
+      <span class="nav-icon">📦</span> My Items
+    </a>
+  </nav>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    (async () => {
+      try { await requireAuth(); } catch (e) { return; }
+
+      try {
+        const items = await api.get('/api/borrowings/my');
+        const list = document.getElementById('borrowList');
+
+        if (!items.length) {
+          list.innerHTML = `
+            <div class="empty-state" style="margin-top: 40px;">
+              <div class="empty-icon">📦</div>
+              You haven't borrowed anything yet.
+              <br><br>
+              <button class="btn primary" onclick="location.href='camera.html'">Scan an item to borrow</button>
+            </div>`;
+          return;
+        }
+
+        list.innerHTML = items.map(item => `
+          <div class="borrow-card ${item.is_overdue ? 'overdue' : ''}">
+            <div class="borrow-head">
+              <div>
+                <div class="borrow-title">${item.equip_name}</div>
+                <div class="borrow-tag">${item.asset_tag}</div>
+              </div>
+              ${item.is_overdue 
+                ? '<span class="badge danger">Overdue</span>' 
+                : `<span class="badge success">${item.days_left} days left</span>`}
+            </div>
+            
+            <div class="borrow-dates">
+              <div>
+                <span>Due Date</span>
+                <strong>${new Date(item.due_date).toLocaleDateString()}</strong>
+              </div>
+            </div>
+
+            <button class="btn primary" style="width: 100%;" onclick="returnItem(${item.borrow_id})">
+              Return Item
+            </button>
+          </div>
+        `).join('');
+
+      } catch (err) {
+        document.getElementById('borrowList').innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">⚠️</div>
+            Could not load borrowings: ${err.message}
+          </div>`;
+      }
+    })();
+
+    async function returnItem(borrowId) {
+      if (!confirm('Have you returned this item to the lab?')) return;
+      try {
+        await api.post(`/api/borrowings/${borrowId}/return`, {});
+        alert('✅ Item returned successfully!');
+        location.reload();
+      } catch (err) {
+        alert('❌ Failed to return: ' + err.message);
+      }
+    }
+  </script>
+</body>
+</html>
